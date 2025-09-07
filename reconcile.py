@@ -1,6 +1,5 @@
 import pandas as pd
 import re
-from tkinter import Tk, filedialog
 
 # Excel extraction function (from phase3_test.py)
 def extract_values(file_path):
@@ -139,23 +138,5 @@ def reconcile(bank_data, visa_data):
     return pd.DataFrame(records)
 
 if __name__ == "__main__":
-    Tk().withdraw()
-
-    excel_file = filedialog.askopenfilename(title="Select Bank Statement Excel file",
-                                            filetypes=[("Excel files", "*.xlsx *.xls")])
-    if not excel_file:
-        print("No Bank Statement file selected.")
-        exit()
-
-    txt_file = filedialog.askopenfilename(title="Select Visa Settlement Summary TXT file",
-                                          filetypes=[("Text files", "*.txt")])
-    if not txt_file:
-        print("No Visa Settlement file selected.")
-        exit()
-
-    bank_data = extract_values(excel_file)
-    visa_data = extract_from_txt(txt_file)
-
-    df = reconcile(bank_data, visa_data)
-    print("\nReconciliation Results:")
-    print(df.to_string(index=False))
+    print("This module is designed to be imported and used by the web application.")
+    print("To run the reconciliation tool, use: python app.py")
