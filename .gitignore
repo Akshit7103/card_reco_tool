@@ -54,9 +54,10 @@ Thumbs.db
 
 # Project specific
 uploads/
-*.xlsx
-*.xls
-*.txt
+# Ignore uploaded data files but not requirements.txt
+data_*.xlsx
+data_*.xls
+test_*.txt
 reconciliation_output.xlsx
 temp_*
 app_old.py
