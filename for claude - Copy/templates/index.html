@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reconciliation Tool</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+        th { background: #f2f2f2; }
+        .match { color: green; font-weight: bold; }
+        .mismatch { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h2>Reconciliation Tool - Phase I</h2>
+
+    <form method="POST" enctype="multipart/form-data">
+        <label>Choose Reconciliation Type:</label>
+        <select name="recon_type" onchange="this.form.submit()">
+            <option value="">-- Select --</option>
+            <option value="visa_vs_summary" {% if recon_type == "visa_vs_summary" %}selected{% endif %}>Visa Detailed vs Visa Summary</option>
+            <option value="cms_vs_visa" {% if recon_type == "cms_vs_visa" %}selected{% endif %}>CMS vs Visa Detailed</option>
+        </select>
+        <br><br>
+
+        {% if recon_type == "visa_vs_summary" %}
+            <label>Upload Visa Settlement Summary (TXT):</label>
+            <input type="file" name="txt_file"><br><br>
+            <label>Upload Visa Detailed Report (Excel):</label>
+            <input type="file" name="visa_file"><br><br>
+        {% elif recon_type == "cms_vs_visa" %}
+            <label>Upload CMS Report (Excel):</label>
+            <input type="file" name="cms_file"><br><br>
+            <label>Upload Visa Detailed Report (Excel):</label>
+            <input type="file" name="visa_file"><br><br>
+        {% endif %}
+
+        <button type="submit">Run Reconciliation</button>
+    </form>
+
+    {% if result %}
+        <h3>Results</h3>
+        <table>
+            <tr>
+                {% for key in result[0].keys() %}
+                    <th>{{ key }}</th>
+                {% endfor %}
+            </tr>
+            {% for row in result %}
+                <tr>
+                    {% for key, value in row.items() %}
+                        <td class="{% if value == 'Match' %}match{% elif value == 'Mismatch' or 'Missing' in value %}mismatch{% endif %}">
+                            {{ value }}
+                        </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </table>
+        <br>
+        <a href="/download">Download Results (Excel)</a>
+    {% endif %}
+</body>
+</html>

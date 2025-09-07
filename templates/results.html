@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reconciliation Results</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Reconciliation Results</h1>
+        <div class="table-container">
+            {{ table | safe }}
+        </div>
+        <a href="/">← Back</a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Error - Reconciliation Tool</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="error-page">
+            <h1>Oops! Something went wrong</h1>
+            <div class="error-message">
+                {{ error }}
+            </div>
+            <div class="error-actions">
+                <a href="/" class="btn-primary">Go Back to Home</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

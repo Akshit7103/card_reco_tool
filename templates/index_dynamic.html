@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Configuration-Driven Reconciliation Tool</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        // Dynamic form generation based on configuration
+        let reconciliationTypes = {{ reconciliation_types | tojson | safe }};
+        
+        function toggleFiles() {
+            const selectedType = document.getElementById('recon_type').value;
+            
+            // Hide all file sections
+            const allSections = document.querySelectorAll('.file-section');
+            allSections.forEach(section => {
+                section.style.display = 'none';
+                // Disable all inputs in hidden sections
+                const inputs = section.querySelectorAll('input[type="file"]');
+                inputs.forEach(input => {
+                    input.disabled = true;
+                    input.value = '';
+                });
+            });
+            
+            if (selectedType && reconciliationTypes[selectedType]) {
+                // Show selected section
+                const selectedSection = document.getElementById(selectedType + '_files');
+                if (selectedSection) {
+                    selectedSection.style.display = 'block';
+                    // Enable inputs in selected section
+                    const inputs = selectedSection.querySelectorAll('input[type="file"]');
+                    inputs.forEach(input => input.disabled = false);
+                }
+                
+                // Update description
+                const descElement = document.getElementById('reconciliation_description');
+                if (descElement) {
+                    descElement.textContent = reconciliationTypes[selectedType].description;
+                    descElement.style.display = 'block';
+                }
+            } else {
+                // Hide description
+                const descElement = document.getElementById('reconciliation_description');
+                if (descElement) {
+                    descElement.style.display = 'none';
+                }
+            }
+        }
+        
+        function validateForm() {
+            const selectedType = document.getElementById('recon_type').value;
+            if (!selectedType) {
+                alert('Please select a reconciliation type.');
+                return false;
+            }
+            
+            const config = reconciliationTypes[selectedType];
+            if (!config) return false;
+            
+            // Check required files
+            for (let fileConfig of config.files) {
+                if (fileConfig.required) {
+                    const input = document.getElementById(fileConfig.field_name);
+                    if (!input || !input.files || input.files.length === 0) {
+                        alert(`Please upload ${fileConfig.label}`);
+                        return false;
+                    }
+                }
+            }
+            
+            return true;
+        }
+        
+        window.onload = function() {
+            toggleFiles();
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Configuration-Driven Reconciliation Tool</h1>
+        
+        {% if error_message %}
+            <div class="error-message">
+                <strong>Error:</strong> {{ error_message }}
+            </div>
+        {% endif %}
+        
+        <form action="/" method="post" enctype="multipart/form-data" onsubmit="return validateForm()">
+            <div class="form-section">
+                <label for="recon_type">Select Reconciliation Type:</label>
+                <select id="recon_type" name="recon_type" onchange="toggleFiles()" required>
+                    <option value="">-- Select Type --</option>
+                    {% for type_key, type_config in reconciliation_types.items() %}
+                        <option value="{{ type_key }}" 
+                                {% if recon_type == type_key %}selected{% endif %}>
+                            {{ type_config.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+                
+                <div id="reconciliation_description" class="description" style="display: none;">
+                    <!-- Description will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Dynamically generate file upload sections -->
+            {% for type_key, type_config in reconciliation_types.items() %}
+                <div id="{{ type_key }}_files" class="file-section" style="display: none;">
+                    <h3>{{ type_config.name }} Files</h3>
+                    {% for file_config in type_config.files %}
+                        <div class="file-input-group">
+                            <label for="{{ file_config.field_name }}">
+                                {{ file_config.label }}:
+                                {% if file_config.required %}
+                                    <span class="required">*</span>
+                                {% endif %}
+                            </label>
+                            <input type="file" 
+                                   id="{{ file_config.field_name }}"
+                                   name="{{ file_config.field_name }}" 
+                                   accept="{{ file_config.accept }}"
+                                   {% if file_config.required %}required{% endif %}
+                                   disabled>
+                            <small class="file-hint">Accepts: {{ file_config.accept }}</small>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+
+            <div class="submit-section">
+                <button type="submit" class="btn-primary">Reconcile Files</button>
+            </div>
+        </form>
+
+        {% if result %}
+            <div class="results-section">
+                <h2>Reconciliation Results</h2>
+                
+                {% if result_config and result_config.columns %}
+                    <div class="table-container">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    {% for column in result_config.columns %}
+                                        <th>{{ column }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in result %}
+                                <tr class="{% if result_config.status_column and row.get(result_config.status_column) == 'Mismatch' %}mismatch-row{% elif result_config.status_column and row.get(result_config.status_column) == 'Match' %}match-row{% endif %}">
+                                    {% for column in result_config.columns %}
+                                        <td>{{ row.get(column, 'N/A') }}</td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <!-- Fallback for unconfigured result types -->
+                    <div class="table-container">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    {% if result %}
+                                        {% for key in result[0].keys() %}
+                                            <th>{{ key }}</th>
+                                        {% endfor %}
+                                    {% endif %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in result %}
+                                <tr>
+                                    {% for value in row.values() %}
+                                        <td>{{ value }}</td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+                
+                <div class="results-actions">
+                    <a href="/download" class="download-btn">Download Results (Excel)</a>
+                    <button onclick="window.location.reload()" class="btn-secondary">New Reconciliation</button>
+                </div>
+            </div>
+        {% endif %}
+        
+        <div class="footer">
+            <p>
+                <strong>Available Reconciliation Types:</strong> {{ reconciliation_types | length }}
+                | <a href="/api/reconciliation-types" target="_blank">View API</a>
+                | <a href="/health" target="_blank">Health Check</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Integrated Reconciliation Tool</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        function toggleFiles() {
+            const type = document.getElementById('recon_type').value;
+            const bankVisa = document.getElementById('bank_vs_visa_files');
+            const visaSummary = document.getElementById('visa_vs_summary_files');
+            const cmsVisa = document.getElementById('cms_vs_visa_files');
+            
+            // Hide all sections and disable all inputs
+            bankVisa.style.display = 'none';
+            visaSummary.style.display = 'none';
+            cmsVisa.style.display = 'none';
+            
+            // Disable all file inputs
+            const allFileInputs = document.querySelectorAll('input[type="file"]');
+            allFileInputs.forEach(input => {
+                input.disabled = true;
+                input.value = '';
+            });
+            
+            if (type === 'bank_vs_visa') {
+                bankVisa.style.display = 'block';
+                document.getElementById('excel_file').disabled = false;
+                document.getElementById('txt_file_bank').disabled = false;
+            } else if (type === 'visa_vs_summary') {
+                visaSummary.style.display = 'block';
+                document.getElementById('visa_file_summary').disabled = false;
+                document.getElementById('txt_file_summary').disabled = false;
+            } else if (type === 'cms_vs_visa') {
+                cmsVisa.style.display = 'block';
+                document.getElementById('cms_file').disabled = false;
+                document.getElementById('visa_file_cms').disabled = false;
+            }
+        }
+        
+        window.onload = function() {
+            toggleFiles();
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Integrated Reconciliation Tool</h1>
+        
+        {% if error_message %}
+            <div class="error-message">
+                <strong>Error:</strong> {{ error_message }}
+            </div>
+        {% endif %}
+        
+        <form action="/" method="post" enctype="multipart/form-data">
+            <label for="recon_type">Select Reconciliation Type:</label>
+            <select id="recon_type" name="recon_type" onchange="toggleFiles()" required>
+                <option value="">-- Select Type --</option>
+                <option value="bank_vs_visa">Bank Statement vs VISA Settlement</option>
+                <option value="visa_vs_summary">VISA Detailed vs Summary Report</option>
+                <option value="cms_vs_visa">CMS vs VISA Comparison</option>
+            </select><br><br>
+
+            <div id="bank_vs_visa_files" style="display: none;">
+                <label>Bank Statement (Excel):</label>
+                <input type="file" name="excel_file" accept=".xlsx,.xls" id="excel_file" disabled><br><br>
+                <label>VISA Settlement Summary (TXT):</label>
+                <input type="file" name="txt_file_bank" accept=".txt" id="txt_file_bank" disabled><br><br>
+            </div>
+
+            <div id="visa_vs_summary_files" style="display: none;">
+                <label>VISA Detailed Report (Excel):</label>
+                <input type="file" name="visa_file" accept=".xlsx,.xls" id="visa_file_summary" disabled><br><br>
+                <label>VISA Settlement Summary (TXT):</label>
+                <input type="file" name="txt_file_summary" accept=".txt" id="txt_file_summary" disabled><br><br>
+            </div>
+
+            <div id="cms_vs_visa_files" style="display: none;">
+                <label>CMS Report (Excel):</label>
+                <input type="file" name="cms_file" accept=".xlsx,.xls" id="cms_file" disabled><br><br>
+                <label>VISA Report (Excel):</label>
+                <input type="file" name="visa_file_cms" accept=".xlsx,.xls" id="visa_file_cms" disabled><br><br>
+            </div>
+
+            <button type="submit">Reconcile</button>
+        </form>
+
+        {% if result %}
+            <div class="table-container">
+                <h2>Reconciliation Results</h2>
+                {% if recon_type == 'bank_vs_visa' %}
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Section</th>
+                                <th>Check</th>
+                                <th>Bank Statement</th>
+                                <th>Visa Summary</th>
+                                <th>Status</th>
+                                <th>Difference</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in result %}
+                            <tr>
+                                <td>{{ row['Section'] }}</td>
+                                <td>{{ row['Check'] }}</td>
+                                <td>{{ row['Bank Statement'] }}</td>
+                                <td>{{ row['Visa Summary'] }}</td>
+                                <td>{{ row['Status'] }}</td>
+                                <td>{{ row['Difference'] }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% elif recon_type == 'visa_vs_summary' %}
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Check</th>
+                                <th>Detailed Report</th>
+                                <th>Summary Report</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in result %}
+                            <tr>
+                                <td>{{ row['Check'] }}</td>
+                                <td>{{ row['Detailed Report'] }}</td>
+                                <td>{{ row['Summary Report'] }}</td>
+                                <td>{{ row['Status'] }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% elif recon_type == 'cms_vs_visa' %}
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Transaction ID</th>
+                                <th>RRN No</th>
+                                <th>Match Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in result %}
+                            <tr>
+                                <td>{{ row['Transaction ID'] }}</td>
+                                <td>{{ row['RRN No'] }}</td>
+                                <td>{{ row['Match Status'] }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
+                <br>
+                <a href="/download" class="download-btn">Download Results (Excel)</a>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>
